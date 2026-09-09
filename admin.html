@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northhh Labs — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10;
+    --bg-raised:#12151a;
+    --line:#23272e;
+    --text:#e7e9ec;
+    --dim:#8b929c;
+    --accent:#5eead4;
+    --amber:#e0a458;
+    --danger:#e05e5e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'JetBrains Mono',monospace;line-height:1.6;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:32px 18px 96px;}
+  h1{
+    font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    font-size:34px;margin:0 0 4px;
+  }
+  .sub{color:var(--dim);font-size:13px;margin-bottom:28px;}
+  label{display:block;font-size:12px;color:var(--dim);margin:18px 0 6px;}
+  input[type=text], input[type=email], input[type=password], textarea{
+    width:100%;background:var(--bg-raised);border:1px solid var(--line);
+    color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;
+    border-radius:4px;
+  }
+  textarea{min-height:90px;resize:vertical;}
+  input:focus, textarea:focus{outline:none;border-color:var(--accent);}
+  .hint{font-size:11px;color:var(--dim);margin-top:4px;}
+  .row{display:flex;align-items:center;gap:8px;margin-top:18px;}
+  .row input[type=checkbox]{width:16px;height:16px;}
+  .row label{margin:0;color:var(--text);font-size:13px;}
+  button{
+    font-family:inherit;font-size:14px;cursor:pointer;border-radius:4px;
+    padding:10px 20px;border:1px solid var(--line);background:transparent;color:var(--text);
+  }
+  button:hover{border-color:var(--accent);}
+  .btn-primary{background:var(--accent);color:#0b0d10;border-color:var(--accent);font-weight:700;}
+  .btn-danger{color:var(--danger);border-color:var(--danger);}
+  .actions{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;}
+  .msg{font-size:13px;padding:10px 12px;border-radius:4px;margin-top:16px;display:none;}
+  .msg.show{display:block;}
+  .msg.ok{background:#123a33;color:var(--accent);}
+  .msg.err{background:#3a1414;color:var(--danger);}
+  section{margin-top:44px;border-top:1px solid var(--line);padding-top:24px;}
+  section h2{font-family:'Big Shoulders Display',sans-serif;font-weight:600;font-size:20px;color:var(--amber);margin:0 0 14px;}
+  .proj-item{
+    border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .proj-item .name{font-size:14px;}
+  .proj-item .slug{font-size:11px;color:var(--dim);}
+  .proj-item .status{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:2px 8px;border-radius:3px;}
+  .proj-item .btns{display:flex;gap:6px;}
+  .proj-item button{padding:6px 10px;font-size:12px;}
+  #loginBox, #panel{display:none;}
+  .state{color:var(--dim);text-align:center;padding-top:80px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>NORTHHH LABS</h1>
+  <div class="sub">project lab — admin</div>
+
+  <p class="state" id="loadingState">checking session…</p>
+
+  <div id="loginBox">
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="username">
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password">
+    <div class="actions">
+      <button class="btn-primary" id="loginBtn">Sign in</button>
+    </div>
+    <div class="msg err" id="loginMsg"></div>
+  </div>
+
+  <div id="panel">
+    <div class="actions">
+      <button id="logoutBtn">Sign out</button>
+    </div>
+
+    <section>
+      <h2 id="formTitle">Add project</h2>
+      <label for="slug">Slug (used in URL — lowercase, no spaces)</label>
+      <input type="text" id="slug">
+      <div class="hint">e.g. "klave" → yoursite.com/case-study.html?p=klave. Can't be changed after creating — delete and recreate instead.</div>
+
+      <label for="title">Title</label>
+      <input type="text" id="title">
+
+      <label for="problem">Problem</label>
+      <textarea id="problem"></textarea>
+
+      <label for="whatBuilt">What I built</label>
+      <textarea id="whatBuilt"></textarea>
+
+      <label for="stack">Stack (comma-separated)</label>
+      <input type="text" id="stack" placeholder="Vercel, Firebase Auth, Firestore, Cloudinary">
+
+      <label for="decisions">Key technical decisions (one per line)</label>
+      <textarea id="decisions"></textarea>
+
+      <label for="challenges">Challenges + how you solved them (one per line)</label>
+      <textarea id="challenges"></textarea>
+
+      <label for="screenshots">Screenshot URLs — Cloudinary links (comma-separated)</label>
+      <input type="text" id="screenshots" placeholder="https://res.cloudinary.com/...">
+
+      <label for="liveUrl">Live demo URL</label>
+      <input type="text" id="liveUrl">
+
+      <label for="githubUrl">GitHub URL</label>
+      <input type="text" id="githubUrl">
+
+      <div class="row">
+        <input type="checkbox" id="published">
+        <label for="published">Published (visible on the public site)</label>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="saveBtn">Save project</button>
+        <button id="clearBtn">Clear form</button>
+      </div>
+      <div class="msg" id="saveMsg"></div>
+    </section>
+
+    <section>
+      <h2>Existing projects</h2>
+      <div id="projList"><p class="hint">Loading…</p></div>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsaQB7wR0IpKfzbyX2ygNiaC2DPEWX_cg",
+    authDomain: "northhh-dev-72fad.firebaseapp.com",
+    projectId: "northhh-dev-72fad",
+    storageBucket: "northhh-dev-72fad.firebasestorage.app",
+    messagingSenderId: "37733150896",
+    appId: "1:37733150896:web:44bf542ff4b31f60914b75"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const ADMIN_UID = "87GkuAFrlIRfDGUvaJksKubttmJ2";
+
+  const el = id => document.getElementById(id);
+  const loadingState = el('loadingState');
+  const loginBox = el('loginBox');
+  const panel = el('panel');
+  let editingSlug = null;
+
+  onAuthStateChanged(auth, (user) => {
+    loadingState.style.display = 'none';
+    if(user && user.uid === ADMIN_UID){
+      loginBox.style.display = 'none';
+      panel.style.display = 'block';
+      loadProjects();
+    }else{
+      if(user) signOut(auth); // signed in but not the admin account
+      panel.style.display = 'none';
+      loginBox.style.display = 'block';
+    }
+  });
+
+  el('loginBtn').onclick = async () => {
+    const msg = el('loginMsg');
+    msg.classList.remove('show');
+    try{
+      await signInWithEmailAndPassword(auth, el('email').value.trim(), el('password').value);
+    }catch(err){
+      msg.textContent = 'Sign-in failed — check email/password.';
+      msg.classList.add('show');
+    }
+  };
+
+  el('logoutBtn').onclick = () => signOut(auth);
+
+  function clearForm(){
+    editingSlug = null;
+    el('formTitle').textContent = 'Add project';
+    ['slug','title','problem','whatBuilt','stack','decisions','challenges','screenshots','liveUrl','githubUrl']
+      .forEach(id => el(id).value = '');
+    el('published').checked = false;
+    el('slug').disabled = false;
+  }
+  el('clearBtn').onclick = clearForm;
+
+  function splitCsv(str){
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  function splitLines(str){
+    return str.split('\n').map(s => s.trim()).filter(Boolean);
+  }
+
+  el('saveBtn').onclick = async () => {
+    const msg = el('saveMsg');
+    msg.className = 'msg';
+    const slug = el('slug').value.trim();
+    if(!slug){
+      msg.textContent = 'Slug is required.';
+      msg.classList.add('show','err');
+      return;
+    }
+    const data = {
+      title: el('title').value.trim(),
+      problem: el('problem').value.trim(),
+      whatBuilt: el('whatBuilt').value.trim(),
+      stack: splitCsv(el('stack').value),
+      decisions: splitLines(el('decisions').value),
+      challenges: splitLines(el('challenges').value),
+      screenshots: splitCsv(el('screenshots').value),
+      liveUrl: el('liveUrl').value.trim(),
+      githubUrl: el('githubUrl').value.trim(),
+      published: el('published').checked
+    };
+    try{
+      await setDoc(doc(db, 'projects', slug), data);
+      msg.textContent = 'Saved.';
+      msg.classList.add('show','ok');
+      clearForm();
+      loadProjects();
+    }catch(err){
+      console.error(err);
+      msg.textContent = 'Save failed: ' + err.message;
+      msg.classList.add('show','err');
+    }
+  };
+
+  async function editProject(slug){
+    const snap = await getDoc(doc(db, 'projects', slug));
+    if(!snap.exists()) return;
+    const d = snap.data();
+    editingSlug = slug;
+    el('formTitle').textContent = 'Edit: ' + slug;
+    el('slug').value = slug;
+    el('slug').disabled = true;
+    el('title').value = d.title || '';
+    el('problem').value = d.problem || '';
+    el('whatBuilt').value = d.whatBuilt || '';
+    el('stack').value = (d.stack || []).join(', ');
+    el('decisions').value = (d.decisions || []).join('\n');
+    el('challenges').value = (d.challenges || []).join('\n');
+    el('screenshots').value = (d.screenshots || []).join(', ');
+    el('liveUrl').value = d.liveUrl || '';
+    el('githubUrl').value = d.githubUrl || '';
+    el('published').checked = !!d.published;
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  async function deleteProject(slug){
+    if(!confirm(`Delete "${slug}" permanently?`)) return;
+    await deleteDoc(doc(db, 'projects', slug));
+    loadProjects();
+  }
+
+  window.editProject = editProject;
+  window.deleteProject = deleteProject;
+
+  async function loadProjects(){
+    const listEl = el('projList');
+    listEl.innerHTML = '<p class="hint">Loading…</p>';
+    try{
+      const snap = await getDocs(collection(db, 'projects'));
+      if(snap.empty){
+        listEl.innerHTML = '<p class="hint">No projects yet.</p>';
+        return;
+      }
+      listEl.innerHTML = '';
+      snap.forEach(d => {
+        const p = d.data();
+        const row = document.createElement('div');
+        row.className = 'proj-item';
+        row.innerHTML = `
+          <div>
+            <div class="name">${p.title || '(untitled)'}</div>
+            <div class="slug">${d.id}</div>
+          </div>
+          <div class="btns">
+            <span class="status">${p.published ? 'published' : 'draft'}</span>
+            <button onclick="editProject('${d.id}')">Edit</button>
+            <button class="btn-danger" onclick="deleteProject('${d.id}')">Delete</button>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }catch(err){
+      listEl.innerHTML = '<p class="hint">Failed to load projects.</p>';
+      console.error(err);
+    }
+  }
+</script>
+</body>
+</html>
