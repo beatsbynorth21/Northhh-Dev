@@ -166,7 +166,14 @@
         contentEl.innerHTML = '<p class="state">Case study not found.</p>';
         return;
       }
-      render(snap.data());
+      const data = snap.data();
+      render(data);
+      if(params.get('debug') === '1'){
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'margin-top:40px;padding:16px;background:#12151a;border:1px solid #23272e;font-size:12px;overflow-x:auto;white-space:pre-wrap;color:#8b929c;';
+        pre.textContent = JSON.stringify(data, null, 2);
+        contentEl.appendChild(pre);
+      }
     }catch(err){
       console.error(err);
       contentEl.innerHTML = '<p class="state">Case study is loading slowly — try refreshing in a moment.</p>';
