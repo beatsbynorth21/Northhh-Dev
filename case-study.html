@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Study — Northhh Labs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10;
+    --bg-raised:#12151a;
+    --line:#23272e;
+    --text:#e7e9ec;
+    --dim:#8b929c;
+    --accent:#5eead4; /* dusk teal, matches existing portfolio accent family */
+    --amber:#e0a458;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    line-height:1.6;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px;}
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .back{font-size:13px;color:var(--dim);}
+  h1{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:800;
+    font-size:clamp(32px,7vw,52px);
+    line-height:1.05;
+    margin:16px 0 4px;
+  }
+  .status{
+    display:inline-block;
+    font-size:12px;
+    color:var(--dim);
+    border:1px solid var(--line);
+    padding:4px 10px;
+    border-radius:4px;
+    margin-bottom:24px;
+  }
+  section{margin-top:44px;border-top:1px solid var(--line);padding-top:24px;}
+  section h2{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:600;
+    font-size:22px;
+    margin:0 0 12px;
+    color:var(--amber);
+  }
+  section p{color:var(--text);white-space:pre-wrap;margin:0 0 12px;}
+  .stack-list, .decisions-list, .challenges-list{
+    list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;
+  }
+  .stack-list li{
+    font-size:14px;color:var(--text);
+    border-left:2px solid var(--accent);padding-left:12px;
+  }
+  .decisions-list li, .challenges-list li{
+    border-left:2px solid var(--line);padding-left:12px;font-size:14px;
+  }
+  .shots{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .shots img{width:100%;border-radius:4px;border:1px solid var(--line);display:block;}
+  .metrics{display:flex;flex-wrap:wrap;gap:24px;}
+  .metric{min-width:100px;}
+  .metric .num{font-family:'Big Shoulders Display',sans-serif;font-size:28px;color:var(--accent);}
+  .metric .label{font-size:12px;color:var(--dim);}
+  .links{display:flex;gap:16px;margin-top:8px;}
+  .links a{
+    border:1px solid var(--line);padding:8px 16px;border-radius:4px;font-size:13px;
+  }
+  .links a:hover{border-color:var(--accent);text-decoration:none;}
+  .state{color:var(--dim);font-size:14px;padding-top:60px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <a class="back" href="/">&larr; back to portfolio</a>
+  <div id="content">
+    <p class="state">loading case study…</p>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  // Same Firebase project config style as KLAVE — fill in your portfolio's project values.
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsaQB7wR0IpKfzbyX2ygNiaC2DPEWX_cg",
+    authDomain: "northhh-dev-72fad.firebaseapp.com",
+    projectId: "northhh-dev-72fad",
+    storageBucket: "northhh-dev-72fad.firebasestorage.app",
+    messagingSenderId: "37733150896",
+    appId: "1:37733150896:web:44bf542ff4b31f60914b75"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const contentEl = document.getElementById('content');
+
+  function esc(str){
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+  }
+
+  function render(project){
+    const stack = (project.stack || []).map(s => `<li>${esc(s)}</li>`).join('');
+    const decisions = (project.decisions || []).map(d => `<li>${esc(d)}</li>`).join('');
+    const challenges = (project.challenges || []).map(c => `<li>${esc(c)}</li>`).join('');
+    const shots = (project.screenshots || []).map(url => `<img src="${esc(url)}" alt="${esc(project.title)} screenshot" loading="lazy">`).join('');
+    const metricEntries = Object.entries(project.metrics || {});
+    const metrics = metricEntries.map(([k,v]) => `
+      <div class="metric"><div class="num">${esc(String(v))}</div><div class="label">${esc(k)}</div></div>
+    `).join('');
+
+    contentEl.innerHTML = `
+      <h1>${esc(project.title)}</h1>
+      <span class="status">${project.published ? 'live case study' : 'draft'}</span>
+
+      <section>
+        <h2>Problem</h2>
+        <p>${esc(project.problem)}</p>
+      </section>
+
+      <section>
+        <h2>What I built</h2>
+        <p>${esc(project.whatBuilt)}</p>
+      </section>
+
+      ${stack ? `<section><h2>Architecture / stack</h2><ul class="stack-list">${stack}</ul></section>` : ''}
+
+      ${decisions ? `<section><h2>Key technical decisions</h2><ul class="decisions-list">${decisions}</ul></section>` : ''}
+
+      ${shots ? `<section><h2>Screenshots</h2><div class="shots">${shots}</div></section>` : ''}
+
+      ${challenges ? `<section><h2>Challenges + how I solved them</h2><ul class="challenges-list">${challenges}</ul></section>` : ''}
+
+      ${metricEntries.length ? `<section><h2>Metrics</h2><div class="metrics">${metrics}</div></section>` : ''}
+
+      <section>
+        <h2>Links</h2>
+        <div class="links">
+          ${project.liveUrl ? `<a href="${esc(project.liveUrl)}" target="_blank" rel="noopener">Live demo</a>` : ''}
+          ${project.githubUrl ? `<a href="${esc(project.githubUrl)}" target="_blank" rel="noopener">GitHub</a>` : ''}
+        </div>
+      </section>
+    `;
+  }
+
+  async function load(){
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('p');
+    if(!slug){
+      contentEl.innerHTML = '<p class="state">No project specified.</p>';
+      return;
+    }
+    try{
+      const snap = await getDoc(doc(db, 'projects', slug));
+      if(!snap.exists() || snap.data().published !== true){
+        contentEl.innerHTML = '<p class="state">Case study not found.</p>';
+        return;
+      }
+      render(snap.data());
+    }catch(err){
+      console.error(err);
+      contentEl.innerHTML = '<p class="state">Case study is loading slowly — try refreshing in a moment.</p>';
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
