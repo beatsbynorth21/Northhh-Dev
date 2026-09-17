@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beat Lab — Northhh</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000; --bg2:#0a0a0a; --line:#2a2a2a;
+    --fg:#f5f5f2; --dim:#6a6a68; --accent:#39ff8f; --accent2:#ff5f3c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:'JetBrains Mono',monospace;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    position:relative;overflow-x:hidden}
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .glow::before,.glow::after{content:'';position:absolute;width:60vw;height:60vw;
+    max-width:640px;max-height:640px;border-radius:50%;filter:blur(90px);opacity:.28;
+    animation:drift 16s ease-in-out infinite alternate}
+  .glow::before{background:var(--accent);top:-18%;left:-14%}
+  .glow::after{background:var(--accent2);bottom:-20%;right:-16%;animation-delay:-8s}
+  @keyframes drift{
+    0%{transform:translate(0,0) scale(1)}
+    100%{transform:translate(6%,4%) scale(1.15)}
+  }
+  .card{width:100%;max-width:540px;position:relative;z-index:1}
+  .eyebrow{color:var(--accent);font-size:.72rem;letter-spacing:2px;margin:0 0 10px;
+    text-transform:uppercase}
+  h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    font-size:clamp(2.6rem,9vw,4.2rem);margin:0 0 6px;letter-spacing:.5px;line-height:.9;
+    color:var(--fg)}
+  .sub{color:var(--dim);font-size:.85rem;margin:0 0 32px}
+  .drop{border:1px solid var(--line);border-radius:2px;padding:48px 20px;text-align:center;
+    cursor:pointer;transition:all .2s;background:
+      linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%), var(--bg2);
+    position:relative}
+  .drop::before{content:'';position:absolute;inset:0;border:1px solid transparent;
+    border-radius:2px;transition:border-color .2s;pointer-events:none}
+  .drop:hover,.drop.over{border-color:var(--accent);box-shadow:0 0 24px -6px rgba(57,255,143,.4)}
+  .drop p{margin:0;color:var(--dim);font-size:.85rem}
+  .drop strong{color:var(--fg);display:block;margin-bottom:8px;font-size:1.05rem;font-weight:500}
+  input[type=file]{display:none}
+  .result{margin-top:28px;display:none}
+  .result.show{display:block}
+  .row{display:flex;justify-content:space-between;align-items:baseline;
+    border-top:1px solid var(--line);padding:18px 2px}
+  .row:first-child{border-top:none}
+  .label{color:var(--dim);font-size:.72rem;letter-spacing:2px}
+  .val{font-size:1.6rem;font-weight:700}
+  .val.bpm{color:var(--accent);text-shadow:0 0 18px rgba(57,255,143,.5)}
+  .val.key{color:var(--accent2);text-shadow:0 0 18px rgba(255,95,60,.4)}
+  .status{color:var(--dim);font-size:.82rem;margin-top:18px;min-height:1.2em}
+  .bar{height:2px;background:var(--line);margin-top:18px;overflow:hidden;border-radius:2px}
+  .bar-fill{height:100%;width:0%;background:var(--accent);transition:width .2s;
+    box-shadow:0 0 10px var(--accent)}
+  .again{margin-top:22px;background:none;border:1px solid var(--line);color:var(--dim);
+    font-family:inherit;font-size:.78rem;padding:10px 16px;border-radius:2px;cursor:pointer;
+    letter-spacing:.5px;transition:all .2s}
+  .again:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="card">
+  <p class="eyebrow">Northhhern Labs</p>
+  <h1>Beat Lab</h1>
+  <p class="sub">drop a track — get BPM &amp; key in seconds</p>
+
+  <div class="drop" id="drop">
+    <strong>Drop an audio file</strong>
+    <p>or tap to browse · MP3, WAV, M4A</p>
+    <input type="file" id="file" accept="audio/*">
+  </div>
+
+  <div class="bar" id="bar" style="display:none"><div class="bar-fill" id="barFill"></div></div>
+  <div class="status" id="status"></div>
+
+  <div class="result" id="result">
+    <div class="row"><span class="label">TEMPO</span><span class="val bpm" id="bpmVal">—</span></div>
+    <div class="row"><span class="label">KEY</span><span class="val key" id="keyVal">—</span></div>
+    <div class="row"><span class="label">TRACK</span><span class="val" style="font-size:.85rem;font-weight:500" id="nameVal">—</span></div>
+  </div>
+  <button class="again" id="again" style="display:none">analyze another</button>
+</div>
+
+<script>
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const status = document.getElementById('status');
+const bar = document.getElementById('bar');
+const barFill = document.getElementById('barFill');
+const result = document.getElementById('result');
+const again = document.getElementById('again');
+
+drop.addEventListener('click', () => fileInput.click());
+['dragover','dragleave','drop'].forEach(ev=>{
+  drop.addEventListener(ev, e=>{
+    e.preventDefault();
+    drop.classList.toggle('over', ev==='dragover');
+  });
+});
+drop.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener('change', e=>{
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+again.addEventListener('click', ()=>{
+  result.classList.remove('show');
+  again.style.display='none';
+  drop.style.display='block';
+  status.textContent='';
+});
+
+function setProgress(pct, msg){
+  bar.style.display='block';
+  barFill.style.width = pct+'%';
+  status.textContent = msg;
+}
+
+async function handleFile(file){
+  drop.style.display='none';
+  result.classList.remove('show');
+  setProgress(5, 'reading file…');
+  try{
+    const arrayBuf = await file.arrayBuffer();
+    setProgress(20, 'decoding audio…');
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const audioBuf = await ctx.decodeAudioData(arrayBuf);
+    const data = audioBuf.numberOfChannels > 1
+      ? mixDown(audioBuf) : audioBuf.getChannelData(0);
+    const sr = audioBuf.sampleRate;
+
+    setProgress(45, 'detecting tempo…');
+    await sleep(10);
+    const bpm = detectBPM(data, sr);
+
+    setProgress(75, 'detecting key…');
+    await sleep(10);
+    const key = detectKey(data, sr);
+
+    setProgress(100, 'done');
+    document.getElementById('bpmVal').textContent = bpm + ' BPM';
+    document.getElementById('keyVal').textContent = key;
+    document.getElementById('nameVal').textContent = file.name;
+    result.classList.add('show');
+    again.style.display='inline-block';
+    bar.style.display='none';
+    status.textContent='';
+    ctx.close();
+  }catch(err){
+    status.textContent = 'couldn\'t read that file — try a different one';
+    bar.style.display='none';
+    drop.style.display='block';
+  }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function mixDown(buf){
+  const len = buf.length;
+  const out = new Float32Array(len);
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const ch = buf.getChannelData(c);
+    for(let i=0;i<len;i++) out[i]+=ch[i]/buf.numberOfChannels;
+  }
+  return out;
+}
+
+// ---- BPM: energy envelope + autocorrelation ----
+function detectBPM(data, sr){
+  const hop = Math.floor(sr*0.01); // 10ms frames
+  const nFrames = Math.floor(data.length/hop);
+  const env = new Float32Array(nFrames);
+  for(let i=0;i<nFrames;i++){
+    let sum=0;
+    const start=i*hop, end=Math.min(start+hop, data.length);
+    for(let j=start;j<end;j++) sum += Math.abs(data[j]);
+    env[i]=sum/(end-start);
+  }
+  // onset strength = positive diff
+  const onset = new Float32Array(nFrames);
+  for(let i=1;i<nFrames;i++) onset[i]=Math.max(0, env[i]-env[i-1]);
+
+  const frameRate = 1/0.01; // frames per second
+  const minBPM=60, maxBPM=180;
+  const minLag = Math.round(frameRate*60/maxBPM);
+  const maxLag = Math.round(frameRate*60/minBPM);
+  let bestLag=minLag, bestScore=-Infinity;
+  for(let lag=minLag; lag<=maxLag; lag++){
+    let score=0;
+    for(let i=0;i+lag<nFrames;i++) score += onset[i]*onset[i+lag];
+    if(score>bestScore){ bestScore=score; bestLag=lag; }
+  }
+  let bpm = 60*frameRate/bestLag;
+  while(bpm<80) bpm*=2;
+  while(bpm>170) bpm/=2;
+  return Math.round(bpm);
+}
+
+// ---- Key: Goertzel chroma + Krumhansl-Schmuckler ----
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const MAJOR_PROFILE=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+const MINOR_PROFILE=[6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+
+function goertzelMag(samples, sr, freq){
+  const N = samples.length;
+  const k = Math.round(N*freq/sr);
+  const w = (2*Math.PI/N)*k;
+  const cosine = Math.cos(w), sine = Math.sin(w), coeff = 2*cosine;
+  let q0=0,q1=0,q2=0;
+  for(let i=0;i<N;i++){
+    q0 = coeff*q1 - q2 + samples[i];
+    q2=q1; q1=q0;
+  }
+  const real = q1 - q2*cosine;
+  const imag = q2*sine;
+  return Math.sqrt(real*real+imag*imag)/N;
+}
+
+function detectKey(data, sr){
+  // use up to ~12s from a bit into the track, downsample for speed
+  const targetSR = 6000;
+  const step = Math.max(1, Math.round(sr/targetSR));
+  const startSample = Math.min(data.length-1, Math.floor(sr*10));
+  const maxLen = Math.floor(6*sr); // 6s window
+  const end = Math.min(data.length, startSample+maxLen);
+  const windowed=[];
+  for(let i=startSample;i<end;i+=step) windowed.push(data[i]);
+  const effSR = sr/step;
+
+  const chroma = new Array(12).fill(0);
+  const baseFreq = 261.63/4; // start low, C1-ish
+  for(let pc=0; pc<12; pc++){
+    let sum=0;
+    for(let oct=0; oct<4; oct++){
+      const freq = baseFreq*Math.pow(2,oct)*Math.pow(2, pc/12);
+      sum += goertzelMag(windowed, effSR, freq);
+    }
+    chroma[pc]=sum;
+  }
+  // normalize
+  const maxC = Math.max(...chroma)||1;
+  const norm = chroma.map(v=>v/maxC);
+
+  let best={score:-Infinity,name:''};
+  for(let root=0; root<12; root++){
+    let majScore=0, minScore=0;
+    for(let i=0;i<12;i++){
+      majScore += norm[(i+root)%12]*MAJOR_PROFILE[i];
+      minScore += norm[(i+root)%12]*MINOR_PROFILE[i];
+    }
+    if(majScore>best.score) best={score:majScore, name:NOTE_NAMES[root]+' major'};
+    if(minScore>best.score) best={score:minScore, name:NOTE_NAMES[root]+' minor'};
+  }
+  return best.name;
+}
+</script>
+</body>
+</html>
